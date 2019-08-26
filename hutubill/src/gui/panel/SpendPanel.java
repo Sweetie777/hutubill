@@ -93,6 +93,7 @@ public class SpendPanel extends WorkingPanel {
 	}
 
 	public static void main(String[] args) {
+
 		showPanel(SpendPanel.instance);
 	}
 
