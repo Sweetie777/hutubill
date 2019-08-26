@@ -1,0 +1,97 @@
+一. 开发步骤:
+	1.表结构设计
+	2.原型设计
+		原型-基础:从直接new JFrame逐步到面板分离,监听器分离,模型分离 并重构各种工具类
+		原型-界面:
+	3.实体类和dao设计
+		相关的数据操作,都由dao来完成
+	4.功能开发
+		首先是确定多层结构,基于事件驱动,规划dao层,service层(解释重构的理由和好处)
+		接着是开发顺序,模块之间是相互依赖的
+		最后引用第三方的包,比如动态生成chart图片, 如何使用这些api
+	
+	event driven
+		|
+	 service 
+		|
+	   dao  -  entity
+	    |
+	 database
+二. 表结构设计
+	1. 创建数据库
+	2. 创建表
+		配置表信息config  用于保存每月预算和mysql的安装路径,用于备份和还原
+			id int,key varchar(255) value varchar(255)
+		消费分类表 caregory   用于保存消费分类,比如餐饮,交通,住宿
+			id int,name varchar(255)
+		消费记录表record  用于存放每一笔的消费记录,并且会用到消费分类
+			id int,spend int,cid int,comment varchar(255),data  date
+三. 界面包的规划
+	首先是Frame 只有一个主frame
+	然后是Panel 每个功能模块
+	接着是Listener 把所有的监听器,都做成独立的类,实现ActionListener接口,
+	最后是model 用于存放数据, 在这个项目中用到TableModel和ComboBoxModel,
+		使用从DAO返回的List作为TableModel的数据
+	界面相关类
+		SpendPanel 消费一览面板类
+		RocoedPanel 记一笔面板类
+		ToolBarListener工具类监听器类
+		BackupListener备份监听器类
+		CategoryComboBoxModel
+		
+四. 界面规划
+	1. 监听器访问组件
+		监听器的主要作用是获取组件的值,和修改组件的值
+		
+		Listener中如何访问组件?
+		1. 在面板类中,把组件声明为public的属性
+		2. 把面板类设计为单例模式
+	2. 在面板类中,把组件声明为public的属性
+		以SpendPanel为例,其中有各种标签对象,把这些标签对象设计为public, 
+			那么只要能够获取SpendPanel实例,就能很方便的获取这些组件
+	3. 把面板类设计为单例模式
+		面板类的实例只需要一个就够了,比如SpendPanel,只需要一个实例就可以了,不需要每次显示这个面板的时候都创建新的实例,.
+			不仅是不需要,也不应该每次都创建新的实例
+		使用的单例模式是最简单的 直接声明一个SpendPanel类型的静态属性,并指向当前实例
+			public static SpendPanel instance = new SpendPanel();
+	4. 监听器通过单例模式的面板访问组件
+		SpendPanell p = SpendPanel.instance;
+		p.vMonthSpend.setText();
+		
+		这样就非常方便, 任何监听器要访问任何面板上的任何组件,都会变得非常便捷, 
+		和直接在man方法中new JFrame中使用传统的内部类方式添加监听器相比, 代码更容易维护
+五. 启动入口Bootstrap
+	1. 设置皮肤, 一旦这里设置了皮肤,其他的Panel类就不需要进行皮肤设置了
+		GUIUtil.useLNF();
+	2. 使用SwingUtilities.invokeAndWait的方式启动图形界面
+		SwingUtilities.invokeLater
+	3. 显示主窗体,并让主窗体下方的workingPanel显示消费一览Panel
+六. 开发顺序
+	1. 模块依赖: 
+		要记一笔, 就必须西安有消费分类数据, 
+		要消费一览, 就必须先在设置里预先设置预算, 
+		要备份和恢复, 就必须在设置里预先设置mysql的安装路径
+		....
+	2. 开发顺序:
+		主窗体工具栏事件响应(指的是主窗体工具栏中的按钮,点击之后,切换不同的面板)
+		设置皮肤消费分类
+		记一笔
+		消费一览
+		月消费报表
+		备份
+		恢复
+七. 监听器
+	1. 监听器ToolBarListener
+		设计一个独立的监听器类ToolBarListener,实现接口ActionListener,重写actionPerformed方法
+		这个监听器是为工具栏上的几个按钮添加的,并且这几个按钮都是用这个监听器
+		通过ActionEvent.getSource()获取事件是哪个按钮发出来的, 根据不同的按钮, 发出切换不同的功能面板
+			JButton b = (JButton) e.getSource();
+			if (b == p.bReport)
+				p.workingPanel.show(ReportPanel.instance);
+	2. 在主面板中增加监听器
+		实例化一个ToolBarListener监听器,工具栏上的按钮, 都加上这么一个监听器对象即可
+	3. 效果
+		点击不同的按钮,就可以在不同的面板之间来回切换
+	4. 独立的监听器与面板单例化
+		监听器独立规划在gui.listener包下, 如果需要做监听器方面的改动, 定位非常方便
+		
